@@ -1,0 +1,12 @@
+black
+matplotlib
+mediapipe
+mypy
+numpy
+opencv-python
+pip-tools
+PySide6
+scikit-learn
+seaborn
+tensorflow[and-cuda]
+tqdm
