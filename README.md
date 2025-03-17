@@ -1,6 +1,6 @@
-Sign language recognition program.
+# Sign language recognition
 
-# Requirements
+## Requirements
 - Python 3.11.11
 
 ## Installation
