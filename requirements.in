@@ -8,5 +8,5 @@ pip-tools
 PySide6
 scikit-learn
 seaborn
-tensorflow[and-cuda]
+tensorflow[and-cuda]==2.19.0
 tqdm

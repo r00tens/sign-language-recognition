@@ -4,7 +4,7 @@
 #
 #    pip-compile requirements.in
 #
-absl-py==2.1.0
+absl-py==2.2.0
     # via
     #   keras
     #   mediapipe
@@ -52,9 +52,9 @@ h5py==3.13.0
     #   tensorflow
 idna==3.10
     # via requests
-jax==0.5.2
+jax==0.5.3
     # via mediapipe
-jaxlib==0.5.1
+jaxlib==0.5.3
     # via
     #   jax
     #   mediapipe
@@ -173,7 +173,7 @@ pillow==11.1.0
     # via matplotlib
 pip-tools==7.4.1
     # via -r requirements.in
-platformdirs==4.3.6
+platformdirs==4.3.7
     # via black
 protobuf==4.25.6
     # via
@@ -184,7 +184,7 @@ pycparser==2.22
     # via cffi
 pygments==2.19.1
     # via rich
-pyparsing==3.2.1
+pyparsing==3.2.3
     # via matplotlib
 pyproject-hooks==1.2.0
     # via
@@ -202,7 +202,7 @@ python-dateutil==2.9.0.post0
     # via
     #   matplotlib
     #   pandas
-pytz==2025.1
+pytz==2025.2
     # via pandas
 requests==2.32.3
     # via tensorflow
@@ -252,7 +252,7 @@ typing-extensions==4.12.2
     #   mypy
     #   optree
     #   tensorflow
-tzdata==2025.1
+tzdata==2025.2
     # via pandas
 urllib3==2.3.0
     # via requests
