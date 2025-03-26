@@ -1,48 +1,15 @@
 import os
-import random
 
-import keras
 import numpy as np
-import tensorflow as tf
 from matplotlib import pyplot as plt
 from matplotlib.patches import Circle
 from matplotlib.ticker import MultipleLocator
 
-from src.backend.config import LOG_LEVEL, TrainingConfig
+from src.backend.config import LOG_LEVEL
 from src.backend.data_augmentation import rotate_z, shear, zoom, scale, shift, jitter
 from src.backend.utils.app_logger import AppLogger
 
 logger = AppLogger(name=__name__, level=LOG_LEVEL)
-
-
-def configure_gpu_memory_growth():
-    gpus = tf.config.list_physical_devices("GPU")
-    if gpus:
-        try:
-            for gpu in gpus:
-                tf.config.experimental.set_memory_growth(gpu, True)
-
-            logger.info(f"Setting memory growth for GPU: {gpus}")
-            logical_gpus = tf.config.list_logical_devices("GPU")
-            logger.info(f"{len(gpus)} Physical GPUs, {len(logical_gpus)} Logical GPUs")
-        except RuntimeError as e:
-            logger.error(f"Error setting memory growth for GPU: {e}")
-    else:
-        logger.info("No GPU found.")
-
-
-def set_seed(seed=42, numpy=False, tensorflow=False, krs=False):
-    os.environ["PYTHONHASHSEED"] = str(seed)
-    random.seed(seed)
-
-    if numpy:
-        np.random.seed(seed)
-    if tensorflow:
-        tf.random.set_seed(seed)
-    if krs:
-        keras.api.backend.clear_session()
-        keras.api.backend.set_floatx(TrainingConfig.floatx)
-        keras.api.utils.set_random_seed(seed)
 
 
 def visualize_hand(landmarks, title: str = "Hand visualisation"):
