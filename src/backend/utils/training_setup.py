@@ -35,34 +35,35 @@ def set_seed(seed=42, numpy=False, tensorflow=False, krs=False):
 
         if numpy:
             np.random.seed(seed)
+            logger.info(f"NumPy seed set to {seed}")
         if tensorflow:
             tf.random.set_seed(seed)
+            logger.info(f"TensorFlow seed set to {seed}")
         if krs:
             keras.api.utils.set_random_seed(seed)
-
-        logger.info(f"Setting seed for numpy: {seed}")
+            logger.info(f"Keras seed set to {seed}")
     except Exception as e:
         logger.error(f"Error setting seed: {e}")
 
 
-def set_mixed_precision_policy(floatx):
-    if floatx == "float16":
+def set_mixed_precision_policy(precision):
+    if precision == "float16":
         policy = keras.mixed_precision.Policy("mixed_float16")
         keras.mixed_precision.set_global_policy(policy)
 
         logger.info("Using mixed precision float16")
-    elif floatx == "bfloat16":
+    elif precision == "bfloat16":
         policy = keras.mixed_precision.Policy("mixed_bfloat16")
         keras.mixed_precision.set_global_policy(policy)
 
         logger.info("Using mixed precision bfloat16")
-    elif floatx == "float32":
+    elif precision == "float32":
         policy = keras.mixed_precision.Policy("float32")
         keras.mixed_precision.set_global_policy(policy)
 
         logger.info("Using float32")
     else:
-        raise ValueError(f"Unsupported float type: {floatx}")
+        raise ValueError(f"Unsupported float type: {precision}")
 
 
 def get_strategy(device):

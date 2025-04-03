@@ -1,10 +1,12 @@
 black
+fastparquet
 matplotlib
 mediapipe
 mypy
 numpy
 opencv-python
 pip-tools
+pyarrow
 PySide6
 scikit-learn
 seaborn

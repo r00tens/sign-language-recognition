@@ -1,3 +1,6 @@
+import numpy as np
+
+
 def get_left_hand_landmarks(mp_results):
     for landmarks, handedness in zip(mp_results.multi_hand_landmarks, mp_results.multi_handedness):
         if handedness.classification[0].label == "Left":
@@ -31,3 +34,38 @@ def extract_normalized_landmarks(hand_landmarks, image_width, image_height, padd
         landmarks.extend([rel_x, rel_y, lm.z])
 
     return landmarks
+
+
+def extract_structured_landmarks(mp_results):
+    if mp_results.face_landmarks:
+        face = np.array(
+            [[lm.x, lm.y, lm.z] for lm in mp_results.face_landmarks.landmark], dtype=np.float32
+        )
+    else:
+        face = np.full(shape=(468, 3), fill_value=np.nan, dtype=np.float32)
+
+    if mp_results.left_hand_landmarks:
+        left = np.array(
+            [[lm.x, lm.y, lm.z] for lm in mp_results.left_hand_landmarks.landmark],
+            dtype=np.float32,
+        )
+    else:
+        left = np.full(shape=(21, 3), fill_value=np.nan, dtype=np.float32)
+
+    if mp_results.pose_landmarks:
+        pose = np.array(
+            [[lm.x, lm.y, lm.z] for lm in mp_results.pose_landmarks.landmark], dtype=np.float32
+        )
+    else:
+        pose = np.full(shape=(33, 3), fill_value=np.nan, dtype=np.float32)
+
+    if mp_results.right_hand_landmarks:
+        right = np.array(
+            [[lm.x, lm.y, lm.z] for lm in mp_results.right_hand_landmarks.landmark],
+            dtype=np.float32,
+        )
+    else:
+        right = np.full(shape=(21, 3), fill_value=np.nan, dtype=np.float32)
+
+    all_landmarks = np.concatenate([face, left, pose, right], axis=0)
+    return all_landmarks

@@ -1,4 +1,5 @@
-from PySide6.QtGui import QColor, QPalette
+from PySide6.QtGui import QColor, QPalette, Qt
+from PySide6.QtWidgets import QStyledItemDelegate, QProxyStyle
 
 
 def gruvbox_palette() -> QPalette:
@@ -23,3 +24,26 @@ def gruvbox_palette() -> QPalette:
     palette.setColor(QPalette.Disabled, QPalette.HighlightedText, QColor("#7c6f64"))
 
     return palette
+
+
+gruvbox_stylesheet = """
+QScrollBar:vertical {
+    background: #3c3836;
+    width: 12px;
+    margin: 0px;
+}
+
+QScrollBar::handle:vertical {
+    background: #504945;
+    min-height: 20px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #665c54;
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    background: none;
+}
+"""
