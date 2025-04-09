@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import numpy as np
-import tensorflow as tf
 from PySide6.QtCore import Qt, QTimer, QRect, QSize
 from PySide6.QtGui import QPixmap, QPainter, QCursor
 from PySide6.QtMultimedia import QMediaDevices
@@ -53,6 +52,7 @@ from src.backend.utils.mediapipe import (
     extract_structured_landmarks,
 )
 from src.backend.utils.training_setup import configure_gpu_memory_growth
+from ai_edge_litert.interpreter import Interpreter
 
 logger = AppLogger(name=__name__, level=LOG_LEVEL)
 
@@ -430,7 +430,7 @@ class MainWindow(QMainWindow):
         elif model_type == "CNN-Transformer":
             model_path = project_root / TRAINED_MODELS_DIR / MODEL_CNN_TRANSFORMER
             try:
-                self.model = tf.lite.Interpreter(model_path=str(model_path))
+                self.model = Interpreter(model_path=str(model_path))
                 logger.info("CNN-Transformer (TFLite) model loaded successfully.")
             except Exception as e:
                 QMessageBox.critical(
@@ -504,7 +504,7 @@ class MainWindow(QMainWindow):
 
         if isinstance(self.model, SVM):
             frame = self.camera_handler.get_frame()
-        elif isinstance(self.model, tf.lite.Interpreter):
+        elif isinstance(self.model, Interpreter):
             frame = self.camera_handler.get_frame_holistic()
         else:
             frame = None
@@ -535,7 +535,7 @@ class MainWindow(QMainWindow):
                         self.reset_prediction_state("Predykcja: brak lewej dłoni")
                 else:
                     self.reset_prediction_state("Predykcja: brak wykrytych dłoni")
-            elif isinstance(self.model, tf.lite.Interpreter):
+            elif isinstance(self.model, Interpreter):
                 if not self.sequence_started:
                     if mp_results and (
                         mp_results.left_hand_landmarks or mp_results.right_hand_landmarks
@@ -604,7 +604,7 @@ class MainWindow(QMainWindow):
                     )
                     self.prediction_count = max(self.prediction_count - 1, 0)
                     self.progress_bar.setValue(self.prediction_count)
-            if isinstance(self.model, tf.lite.Interpreter):
+            if isinstance(self.model, Interpreter):
                 input_details = self.model.get_input_details()
 
                 if input_details[0]["shape"][0] != features.shape[0]:
@@ -615,9 +615,8 @@ class MainWindow(QMainWindow):
                 self.model.invoke()
                 outputs = self.model.get_tensor(self.model.get_output_details()[0]["index"])
 
-                probabilities = tf.nn.softmax(outputs).numpy()
-                predicted_class = np.argmax(probabilities, axis=1)[0]
-                confidence = probabilities[0][predicted_class]
+                predicted_class = np.argmax(outputs, axis=1)[0]
+                confidence = outputs[0][predicted_class]
 
                 if confidence >= self.prediction_threshold:
                     self.update_prediction(predicted_class, float(confidence))
@@ -646,7 +645,7 @@ class MainWindow(QMainWindow):
             if self.prediction_count >= self.stabilization_frames:
                 self.update_accumulated_text(new_prediction)
                 self.reset_prediction_state()
-        elif isinstance(self.model, tf.lite.Interpreter):
+        elif isinstance(self.model, Interpreter):
             self.predictionTextEdit.setPlainText(
                 f"Predykcja: {INVERTED_NEW_MAPPING[new_prediction]} ({max_proba:.2f})"
             )
@@ -662,7 +661,7 @@ class MainWindow(QMainWindow):
             else:
                 self.accumulated_text += new_prediction
             self.accumulatedTextEdit.setPlainText(self.accumulated_text)
-        elif isinstance(self.model, tf.lite.Interpreter):
+        elif isinstance(self.model, Interpreter):
             self.accumulated_text += new_prediction + " "
             self.accumulatedTextEdit.setPlainText(self.accumulated_text)
 

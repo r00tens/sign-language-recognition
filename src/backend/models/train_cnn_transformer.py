@@ -3,7 +3,6 @@ from typing import Tuple
 
 import keras
 import numpy as np
-import optuna
 import tensorflow as tf
 from matplotlib import pyplot as plt
 
@@ -565,8 +564,10 @@ class TFLiteModel(tf.Module):
     def __call__(self, inputs):
         # noinspection PyCallingNonCallable
         x = self.prepare_inputs(tf.cast(inputs, dtype=tf.float32))
-        outputs = self.keras_model(x)
-        return {"outputs": outputs}
+        logits = self.keras_model(x)
+        probabilities = tf.nn.softmax(logits)
+
+        return {"outputs": probabilities}
 
 
 def convert_to_tflite(keras_model, output_dir: Path):

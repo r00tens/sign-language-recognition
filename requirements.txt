@@ -10,6 +10,8 @@ absl-py==2.2.0
     #   mediapipe
     #   tensorboard
     #   tensorflow
+ai-edge-litert==1.2.0
+    # via -r requirements.in
 astunparse==1.6.3
     # via tensorflow
 attrs==25.3.0
@@ -38,6 +40,7 @@ fastparquet==2024.11.0
     # via -r requirements.in
 flatbuffers==25.2.10
     # via
+    #   ai-edge-litert
     #   mediapipe
     #   tensorflow
 fonttools==4.56.0
@@ -104,6 +107,7 @@ namex==0.0.8
 numpy==1.26.4
     # via
     #   -r requirements.in
+    #   ai-edge-litert
     #   contourpy
     #   fastparquet
     #   h5py
