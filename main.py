@@ -2,7 +2,7 @@ import sys
 
 from PySide6.QtWidgets import QApplication
 
-from src.backend.themes.pallets import gruvbox_palette, gruvbox_stylesheet
+from src.frontend.pallets import gruvbox_palette, gruvbox_stylesheet
 from src.frontend.main_window import MainWindow
 
 if __name__ == "__main__":
