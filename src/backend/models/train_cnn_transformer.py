@@ -3,6 +3,7 @@ from typing import Tuple
 
 import keras
 import numpy as np
+import optuna
 import tensorflow as tf
 from matplotlib import pyplot as plt
 
@@ -277,7 +278,7 @@ def plot_accuracy(history):
     ax.set_ylabel("Accuracy")
     ax.legend()
     fig.tight_layout()
-    plt.savefig(PROJECT_ROOT / "trained-models/training-accuracy.png")
+    plt.savefig(PROJECT_ROOT / "data/training-results/training-accuracy.png")
     plt.close(fig)
 
 
@@ -319,7 +320,7 @@ def plot_loss(history):
     ax.set_ylabel("Loss")
     ax.legend()
     fig.tight_layout()
-    plt.savefig(PROJECT_ROOT / "trained-models/training-loss.png")
+    plt.savefig(PROJECT_ROOT / "data/training-results/training-loss.png")
     plt.close(fig)
 
 
@@ -349,7 +350,7 @@ def plot_lr_vs_loss(history):
 
     ax.set_xticklabels([f"{tick:.0e}" for tick in ticks], rotation=45)
 
-    plt.savefig(PROJECT_ROOT / "trained-models/lr-vs-loss.png")
+    plt.savefig(PROJECT_ROOT / "data/training-results/lr-vs-loss.png")
 
 
 def train_fold(fold, strategy, train_files, valid_files=None, summary=True):
@@ -411,7 +412,7 @@ def train_fold(fold, strategy, train_files, valid_files=None, summary=True):
             clipnorm=TrainingConfig.clipnorm,
             clipvalue=TrainingConfig.clipvalue,
             use_ema=True,
-            ema_momentum=0.995,
+            ema_momentum=0.99,
             ema_overwrite_frequency=None,
         )
 
@@ -444,7 +445,7 @@ def train_fold(fold, strategy, train_files, valid_files=None, summary=True):
 
     # fmt: off
     callbacks = [
-        keras.api.callbacks.CSVLogger(PROJECT_ROOT / f"trained-models/training-logs.csv"),
+        keras.api.callbacks.CSVLogger(PROJECT_ROOT / f"data/training-results/training-logs.csv"),
         keras.api.callbacks.SwapEMAWeights(swap_on_epoch=True),
     ]
     # fmt: on
@@ -473,7 +474,7 @@ def train_fold(fold, strategy, train_files, valid_files=None, summary=True):
         callbacks.append(checkpoint_full)
         callbacks.append(checkpoint_weights)
         callbacks.append(
-            LearningRateTracker(PROJECT_ROOT / "trained-models/learning-rate-plot.png")
+            LearningRateTracker(PROJECT_ROOT / "data/training-results/learning-rate-plot.png")
         )
 
     history = model.fit(

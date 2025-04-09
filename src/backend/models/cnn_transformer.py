@@ -205,8 +205,14 @@ def get_model(max_len, dim, kernel_size, num_head, expand, drop_rate, attn_dropo
 
     x = multi_scale_conv_block(
         channel_size=dim,
-        kernel_sizes=[kernel_size, kernel_size - 2, kernel_size - 4],
-        dilation_rates=[1, 1, 1],
+        kernel_sizes=[kernel_size, kernel_size - 2],
+        dilation_rates=[1, 1],
+        drop_rate=drop_rate,
+    )(x)
+    x = multi_scale_conv_block(
+        channel_size=dim,
+        kernel_sizes=[kernel_size - 4, kernel_size - 6],
+        dilation_rates=[1, 1],
         drop_rate=drop_rate,
     )(x)
 
@@ -220,8 +226,14 @@ def get_model(max_len, dim, kernel_size, num_head, expand, drop_rate, attn_dropo
 
     x = multi_scale_conv_block(
         channel_size=dim,
-        kernel_sizes=[kernel_size, kernel_size - 2, kernel_size - 4],
-        dilation_rates=[1, 1, 1],
+        kernel_sizes=[kernel_size - 4, kernel_size - 6],
+        dilation_rates=[1, 1],
+        drop_rate=drop_rate,
+    )(x)
+    x = multi_scale_conv_block(
+        channel_size=dim,
+        kernel_sizes=[kernel_size, kernel_size - 2],
+        dilation_rates=[1, 1],
         drop_rate=drop_rate,
     )(x)
 

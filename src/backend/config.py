@@ -44,18 +44,18 @@ class GestureConfig:
 
 class TrainingConfig:
     batch_size: int = 64
-    epochs: int = 150
+    epochs: int = 250
     learning_rate: float = 1e-3
     min_lr: float = 1e-6
-    weight_decay: float = 1e-1
+    weight_decay: float = 0.2263
     dim: int = 144
-    kernel_size: int = 13
+    kernel_size: int = 15
     num_heads: int = 4
     expand: int = 2
     momentum: float = 0.99
     attn_dropout: float = 0.2
     drop_rate: float = 0.2
-    label_smoothing: float = 0.05
+    label_smoothing: float = 0.1
     clipnorm: Optional[float] = None
     clipvalue: Optional[float] = None
     augmentation: bool = True
