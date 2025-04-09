@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import tensorflow as tf
 from PySide6.QtCore import Qt, QTimer, QRect, QSize
-from PySide6.QtGui import QPixmap, QPainter
+from PySide6.QtGui import QPixmap, QPainter, QCursor
 from PySide6.QtMultimedia import QMediaDevices
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
@@ -167,7 +167,11 @@ class MainWindow(QMainWindow):
         # Current prediction view (read-only)
         self.predictionTextEdit = QPlainTextEdit("")
         self.predictionTextEdit.setReadOnly(True)
-        self.predictionTextEdit.setStyleSheet("background-color: rgba(0, 0, 0, 0);")
+        self.predictionTextEdit.setPlaceholderText("Predykcja")
+        self.predictionTextEdit.viewport().setCursor(QCursor(Qt.ArrowCursor))
+        self.predictionTextEdit.setStyleSheet(
+            "background-color: rgba(0, 0, 0, 0); color: #ebdbb2;"
+        )
         self.predictionTabWidget = QTabWidget()
         self.predictionTabWidget.setMinimumHeight(100)
         self.predictionTabWidget.addTab(self.predictionTextEdit, "")
@@ -253,6 +257,7 @@ class MainWindow(QMainWindow):
         letters_layout = QVBoxLayout(letters_widget)
         letters_edit = QPlainTextEdit()
         letters_edit.setReadOnly(True)
+        letters_edit.viewport().setCursor(QCursor(Qt.ArrowCursor))
         letters_edit.setStyleSheet("background-color: rgba(0, 0, 0, 0);")
         letters_text = "\n".join([value for key, value in sorted(LETTERS.items())])
         letters_edit.setPlainText(letters_text)
@@ -263,6 +268,7 @@ class MainWindow(QMainWindow):
         mapping_layout = QVBoxLayout(mapping_widget)
         mapping_edit = QPlainTextEdit()
         mapping_edit.setReadOnly(True)
+        mapping_edit.viewport().setCursor(QCursor(Qt.ArrowCursor))
         mapping_edit.setStyleSheet("background-color: rgba(0, 0, 0, 0);")
         mapping_text = "\n".join(sorted(SELECTED_WORDS.keys()))
         mapping_edit.setPlainText(mapping_text)
