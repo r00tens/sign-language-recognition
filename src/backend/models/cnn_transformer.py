@@ -2,7 +2,6 @@ from pathlib import Path
 
 import keras
 import math
-import tensorflow as tf
 
 from src.backend.config import CHANNELS, GestureConfig, LOG_LEVEL, TrainingConfig, NUM_SELECTED
 from src.backend.utils.app_logger import AppLogger

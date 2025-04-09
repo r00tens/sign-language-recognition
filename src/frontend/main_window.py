@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
     QButtonGroup,
     QRadioButton,
 )
+from ai_edge_litert.interpreter import Interpreter
 
 from src.backend.config import (
     LOG_LEVEL,
@@ -52,7 +53,6 @@ from src.backend.utils.mediapipe import (
     extract_structured_landmarks,
 )
 from src.backend.utils.training_setup import configure_gpu_memory_growth
-from ai_edge_litert.interpreter import Interpreter
 
 logger = AppLogger(name=__name__, level=LOG_LEVEL)
 

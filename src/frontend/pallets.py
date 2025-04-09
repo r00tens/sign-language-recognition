@@ -1,5 +1,4 @@
-from PySide6.QtGui import QColor, QPalette, Qt
-from PySide6.QtWidgets import QStyledItemDelegate, QProxyStyle
+from PySide6.QtGui import QColor, QPalette
 
 
 def gruvbox_palette() -> QPalette:
