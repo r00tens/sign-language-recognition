@@ -1,8 +1,8 @@
 import time
 
 import cv2
-import tensorflow as tf
 from PySide6.QtGui import QBrush, QColor, QImage, QPainter, QPen, QPixmap
+from ai_edge_litert.interpreter import Interpreter
 
 import mediapipe as mp
 from src.backend.config import DrawingConfig, MediaPipeConfig, CameraConfig
@@ -297,7 +297,7 @@ class CameraHandler:
                 min_tracking_confidence=self.min_tracking_confidence,
             )
 
-        if isinstance(model, tf.lite.Interpreter):
+        if isinstance(model, Interpreter):
             self.holistic.close()
             self.holistic = self.mp_holistic.Holistic(
                 static_image_mode=False,
