@@ -2,9 +2,10 @@ from pathlib import Path
 
 import numpy as np
 import tensorflow as tf
-from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QPixmap
+from PySide6.QtCore import Qt, QTimer, QRect, QSize
+from PySide6.QtGui import QPixmap, QPainter
 from PySide6.QtMultimedia import QMediaDevices
+from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -40,6 +41,7 @@ from src.backend.config import (
     SELECTED_WORDS,
     LETTERS,
     MediaPipeConfig,
+    PROJECT_ROOT,
 )
 from src.backend.models.svm import SVM
 from src.backend.utils.app_logger import AppLogger
@@ -110,9 +112,27 @@ class MainWindow(QMainWindow):
         # Camera view
         self.video_label = QLabel()
         self.video_label.setFixedSize(640, 480)
-        camera_layout.addWidget(self.video_label, alignment=Qt.AlignHCenter)
 
-        # QTabWidget with a single ‘Status’ tab containing both GroupBoxes
+        self.camera_tab_widget = QTabWidget()
+        self.camera_tab_widget.tabBar().hide()
+        self.camera_tab_widget.setStyleSheet(
+            """
+            QTabBar::tab {
+                height: 0;
+            }
+            """
+        )
+        self.camera_tab_widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+
+        camera_tab = QWidget()
+        camera_tab_layout = QHBoxLayout()
+        camera_tab_layout.addWidget(self.video_label)
+        camera_tab.setLayout(camera_tab_layout)
+
+        self.camera_tab_widget.addTab(camera_tab, "Kamera")
+
+        camera_layout.addWidget(self.camera_tab_widget, alignment=Qt.AlignCenter)
+
         status_tab_widget = QTabWidget()
         status_tab_widget.tabBar().hide()
         status_tab = QWidget()
@@ -261,10 +281,9 @@ class MainWindow(QMainWindow):
         self.available_cameras = QMediaDevices.videoInputs()
 
         if not self.available_cameras:
-            black_pixmap = QPixmap(self.video_label.width(), self.video_label.height())
-            black_pixmap.fill(Qt.black)
-            self.video_label.setPixmap(black_pixmap)
+            self.display_inactive_camera()
             self.toggle_button.setEnabled(False)
+            logger.error("No cameras detected.")
         else:
             for idx, cam in enumerate(self.available_cameras):
                 self.camera_selector.addItem(cam.description(), idx)
@@ -383,7 +402,7 @@ class MainWindow(QMainWindow):
                 self.model.load_model(model_path)
                 logger.info("SVM model loaded successfully.")
             except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to load SVM model:\n{e}")
+                QMessageBox.critical(self, "Błąd", f"Nie udało się załadować modelu SVM:\n{e}")
                 logger.error(f"Failed to load SVM model: {e}")
                 exit(1)
 
@@ -408,7 +427,9 @@ class MainWindow(QMainWindow):
                 self.model = tf.lite.Interpreter(model_path=str(model_path))
                 logger.info("CNN-Transformer (TFLite) model loaded successfully.")
             except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to load CNN-Transformer model:\n{e}")
+                QMessageBox.critical(
+                    self, "Błąd", f"Nie udało się załadować modelu CNN-Transformer:\n{e}"
+                )
                 logger.error(f"Failed to load CNN-Transformer model: {e}")
                 exit(1)
 
@@ -532,9 +553,33 @@ class MainWindow(QMainWindow):
             self.fps_processing_label.setText(f"Przetwarzane FPS: {fps:.2f}")
 
     def display_inactive_camera(self):
-        black_pixmap = QPixmap(self.video_label.width(), self.video_label.height())
-        black_pixmap.fill(Qt.black)
-        self.video_label.setPixmap(black_pixmap)
+        svg_path = str(PROJECT_ROOT / "assets/icons/webcam-off.svg")
+        svg_renderer = QSvgRenderer(svg_path)
+
+        label_rect = self.video_label.rect()
+
+        pixmap = QPixmap(label_rect.size())
+        pixmap.fill(Qt.transparent)
+
+        svg_default_size = svg_renderer.defaultSize()
+        if not svg_default_size.isEmpty():
+            scaled_size = svg_default_size.scaled(label_rect.size(), Qt.KeepAspectRatio)
+            factor = 0.5
+            new_width = int(scaled_size.width() * factor)
+            new_height = int(scaled_size.height() * factor)
+            scaled_size = QSize(new_width, new_height)
+            x = (label_rect.width() - scaled_size.width()) // 2
+            y = (label_rect.height() - scaled_size.height()) // 2
+            target_rect = QRect(x, y, scaled_size.width(), scaled_size.height())
+        else:
+            target_rect = label_rect
+
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.Antialiasing)
+        svg_renderer.render(painter, target_rect)
+        painter.end()
+
+        self.video_label.setPixmap(pixmap)
         self.fps_declared_label.setText("Deklarowane FPS kamery: 0")
         self.fps_processing_label.setText("Przetwarzane FPS: 0")
 
