@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 
 import numpy as np
@@ -52,11 +53,8 @@ from src.backend.utils.mediapipe import (
     extract_normalized_landmarks,
     extract_structured_landmarks,
 )
-from src.backend.utils.training_setup import configure_gpu_memory_growth
 
 logger = AppLogger(name=__name__, level=LOG_LEVEL)
-
-configure_gpu_memory_growth()
 
 
 class MainWindow(QMainWindow):
@@ -173,7 +171,7 @@ class MainWindow(QMainWindow):
             "background-color: rgba(0, 0, 0, 0); color: #ebdbb2;"
         )
         self.predictionTabWidget = QTabWidget()
-        self.predictionTabWidget.setMinimumHeight(100)
+        self.predictionTabWidget.setMinimumHeight(75)
         self.predictionTabWidget.addTab(self.predictionTextEdit, "")
         self.predictionTabWidget.tabBar().hide()
 
@@ -184,7 +182,7 @@ class MainWindow(QMainWindow):
             "background-color: rgba(0, 0, 0, 0); color: #ebdbb2;"
         )
         self.accumulatedTabWidget = QTabWidget()
-        self.accumulatedTabWidget.setMinimumHeight(100)
+        self.accumulatedTabWidget.setMinimumHeight(75)
         self.accumulatedTabWidget.addTab(self.accumulatedTextEdit, "")
         self.accumulatedTabWidget.tabBar().hide()
 
@@ -520,6 +518,9 @@ class MainWindow(QMainWindow):
 
         if qimg is not None:
             self.video_label.setPixmap(QPixmap.fromImage(qimg))
+
+            features = None
+
             if isinstance(self.model, SVM):
                 if mp_results and mp_results.multi_hand_landmarks and mp_results.multi_handedness:
                     left_hand_landmarks = get_left_hand_landmarks(mp_results)
@@ -529,8 +530,6 @@ class MainWindow(QMainWindow):
                         )
 
                         features = np.array(features).reshape(1, -1)
-
-                        self.process_prediction(features)
                     else:
                         self.reset_prediction_state("Predykcja: brak lewej dłoni")
                 else:
@@ -549,10 +548,20 @@ class MainWindow(QMainWindow):
 
                         if len(self.landmark_buffer) == self.sequence_length:
                             features = np.array(self.landmark_buffer, dtype=np.float32)
-                            self.process_prediction(features)
                             self.landmark_buffer = []
                             self.progress_bar.setValue(0)
                             self.sequence_started = False
+
+            if features is not None:
+                total_start = time.perf_counter()
+                inference_ms = self.process_prediction(features)
+                total_elapsed_ms = (time.perf_counter() - total_start) * 1000
+                text = self.predictionTextEdit.toPlainText()
+                self.predictionTextEdit.setPlainText(
+                    f"{text}\n"
+                    f"Czas inferencji modelu: {inference_ms:.2f} ms\n"
+                    f"Czas całkowity predykcji: {total_elapsed_ms:.2f} ms"
+                )
 
         if fps > 0:
             self.fps_declared_label.setText(f"Deklarowane FPS kamery: {real_fps:.2f}")
@@ -589,13 +598,16 @@ class MainWindow(QMainWindow):
         self.fps_declared_label.setText("Deklarowane FPS kamery: 0")
         self.fps_processing_label.setText("Przetwarzane FPS: 0")
 
-    def process_prediction(self, features):
+    def process_prediction(self, features) -> float:
         try:
             if isinstance(self.model, SVM):
+                infer_start = time.perf_counter()
                 proba = self.model.predict_proba(features)
-                max_proba = np.max(proba)
                 new_prediction = self.model.predict(features)[0]
+                infer_end = time.perf_counter()
+                inference_ms = (infer_end - infer_start) * 1000
 
+                max_proba = np.max(proba)
                 if max_proba >= self.prediction_threshold:
                     self.update_prediction(new_prediction, max_proba)
                 else:
@@ -604,16 +616,21 @@ class MainWindow(QMainWindow):
                     )
                     self.prediction_count = max(self.prediction_count - 1, 0)
                     self.progress_bar.setValue(self.prediction_count)
-            if isinstance(self.model, Interpreter):
+            elif isinstance(self.model, Interpreter):
                 input_details = self.model.get_input_details()
+                input_index = input_details[0]["index"]
+                output_index = self.model.get_output_details()[0]["index"]
 
                 if input_details[0]["shape"][0] != features.shape[0]:
-                    self.model.resize_tensor_input(input_details[0]["index"], features.shape)
+                    self.model.resize_tensor_input(input_index, features.shape)
                     self.model.allocate_tensors()
+                self.model.set_tensor(input_index, features)
 
-                self.model.set_tensor(input_details[0]["index"], features)
+                infer_start = time.perf_counter()
                 self.model.invoke()
-                outputs = self.model.get_tensor(self.model.get_output_details()[0]["index"])
+                outputs = self.model.get_tensor(output_index)
+                infer_end = time.perf_counter()
+                inference_ms = (infer_end - infer_start) * 1000
 
                 predicted_class = np.argmax(outputs, axis=1)[0]
                 confidence = outputs[0][predicted_class]
@@ -624,9 +641,14 @@ class MainWindow(QMainWindow):
                     self.predictionTextEdit.setPlainText(
                         f"Predykcja niepewna: {INVERTED_NEW_MAPPING[predicted_class]} ({float(confidence):.2f})"
                     )
+            else:
+                inference_ms = 0.0
         except Exception as e:
             logger.error(f"Error during prediction: {e}")
             self.predictionTextEdit.setPlainText("Predykcja: błąd")
+            inference_ms = 0.0
+
+        return inference_ms
 
     def update_prediction(self, new_prediction, max_proba):
         if isinstance(self.model, SVM):
