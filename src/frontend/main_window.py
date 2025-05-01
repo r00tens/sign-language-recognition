@@ -2,7 +2,7 @@ import time
 from pathlib import Path
 
 import numpy as np
-from PySide6.QtCore import Qt, QTimer, QRect, QSize
+from PySide6.QtCore import Qt, QTimer, QRect, QSize, QByteArray
 from PySide6.QtGui import QPixmap, QPainter, QCursor
 from PySide6.QtMultimedia import QMediaDevices
 from PySide6.QtSvg import QSvgRenderer
@@ -289,8 +289,8 @@ class MainWindow(QMainWindow):
             self.toggle_button.setEnabled(False)
             logger.error("No cameras detected.")
         else:
-            for idx, cam in enumerate(self.available_cameras):
-                self.camera_selector.addItem(cam.description(), idx)
+            for cam in self.available_cameras:
+                self.camera_selector.addItem(cam.description(), cam.id())
 
             self.camera_selector.currentIndexChanged.connect(self.switch_camera)
 
@@ -694,8 +694,15 @@ class MainWindow(QMainWindow):
         self.prediction_count = 0
         self.progress_bar.setValue(0)
 
-    def switch_camera(self, index):
-        self.camera_handler.switch_camera(index)
+    def switch_camera(self, index: int) -> None:
+        raw = self.camera_selector.itemData(index)
+        if isinstance(raw, QByteArray):
+            data_bytes: bytes = raw.data()
+            device = data_bytes.decode("utf-8")
+        else:
+            device = str(raw)
+
+        self.camera_handler.switch_camera(device)
         self.toggle_button.setText("Wyłącz kamerę")
 
     def toggle_camera(self):

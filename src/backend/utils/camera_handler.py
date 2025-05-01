@@ -74,10 +74,10 @@ def draw_custom_landmarks(qimg, hand_landmarks, connections, w, h):
         painter.setBrush(landmark_brush)
         for lm in hand_landmarks.landmark:
             draw_landmark(painter, lm, w, h, config["landmark_radius"])
+
+        return pixmap.toImage()
     finally:
         painter.end()
-
-    return pixmap.toImage()
 
 
 def draw_all_landmarks(qimg, results, w, h, draw_hand=True, draw_face=True, draw_pose=True):
@@ -134,13 +134,7 @@ class CameraHandler:
     ):
         self.camera_index = camera_index
         self.cap = cv2.VideoCapture(self.camera_index, cv2.CAP_V4L2)
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, CameraConfig.width)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CameraConfig.height)
-        self.cap.set(
-            cv2.CAP_PROP_FOURCC,
-            cv2.VideoWriter.fourcc(*CameraConfig.video_codec),
-        )
-        self.cap.set(cv2.CAP_PROP_FPS, CameraConfig.fps)
+        self._apply_camera_config(self.cap)
         self.camera_active = CameraConfig.camera_active
 
         self.model_complexity = model_complexity
@@ -210,6 +204,16 @@ class CameraHandler:
 
         return qimg, declared_fps, self.fps, results
 
+    @staticmethod
+    def _apply_camera_config(cap: cv2.VideoCapture):
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, CameraConfig.width)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CameraConfig.height)
+        cap.set(
+            cv2.CAP_PROP_FOURCC,
+            cv2.VideoWriter.fourcc(*CameraConfig.video_codec),
+        )
+        cap.set(cv2.CAP_PROP_FPS, CameraConfig.fps)
+
     def _capture_and_process(self, process_fn):
         if not (self.camera_active and self.cap.isOpened()):
             return None, None, None, None
@@ -244,12 +248,19 @@ class CameraHandler:
 
         return declared_fps, self.fps
 
-    def switch_camera(self, new_index):
-        if self.cap:
+    def switch_camera(self, new_source):
+        if hasattr(self, "cap") and self.cap is not None:
             self.cap.release()
-        self.camera_index = new_index
-        self.cap = cv2.VideoCapture(self.camera_index)
-        self.camera_active = True
+
+        self.camera_index = new_source
+
+        if isinstance(new_source, str):
+            self.cap = cv2.VideoCapture(new_source, cv2.CAP_V4L2)
+        else:
+            self.cap = cv2.VideoCapture(int(new_source), cv2.CAP_V4L2)
+
+        self._apply_camera_config(self.cap)
+        self.camera_active = self.cap.isOpened()
 
     def toggle_camera(self):
         if self.camera_active:
@@ -259,13 +270,8 @@ class CameraHandler:
         else:
             if not self.cap or not self.cap.isOpened():
                 self.cap = cv2.VideoCapture(self.camera_index, cv2.CAP_V4L2)
-                self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, CameraConfig.width)
-                self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CameraConfig.height)
-                self.cap.set(
-                    cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc(*CameraConfig.video_codec)
-                )
-                self.cap.set(cv2.CAP_PROP_FPS, CameraConfig.fps)
-            self.camera_active = True
+                self._apply_camera_config(self.cap)
+            self.camera_active = self.cap.isOpened()
 
     def set_draw_hands_landmarks(self, flag: bool):
         self.draw_hands_landmarks = flag
