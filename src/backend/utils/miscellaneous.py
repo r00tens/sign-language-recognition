@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -72,7 +73,7 @@ def visualize_hand(landmarks, title: str = "Hand visualisation"):
     plt.savefig(f"../../data/augmentation-visualisation/static-gesture/{title}.png")
 
 
-def visualize_augmentations(sample_landmarks, seed: int = None):
+def visualize_augmentations(sample_landmarks, seed: Optional[int] = None) -> None:
     if seed is not None:
         np.random.seed(seed)
 
