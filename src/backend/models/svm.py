@@ -13,7 +13,7 @@ from sklearn.metrics import (
 from sklearn.model_selection import GridSearchCV, cross_val_score
 from sklearn.svm import SVC
 
-from src.backend.config import LOG_LEVEL
+from src.backend.config import LOG_LEVEL, PROJECT_ROOT
 from src.backend.utils.app_logger import AppLogger
 
 logger = AppLogger(name=__name__, level=LOG_LEVEL)
@@ -122,7 +122,7 @@ class SVM:
     def save_model(self, filepath: Path) -> None:
         model = self._ensure_model_trained()
         with filepath.open("wb") as f:
-            pickle.dump(model, f)
+            pickle.dump(model, f)  # type: ignore
 
     def load_model(self, filepath: Path) -> None:
         with filepath.open("rb") as f:
@@ -131,7 +131,7 @@ class SVM:
     def evaluate(self, x: np.ndarray, y: np.ndarray, plot_confusion: bool = False) -> dict:
         model = self._ensure_model_trained()
         y_pred = model.predict(x)
-        report = classification_report(y, y_pred)
+        report = classification_report(y, y_pred, digits=4)
         matrix = confusion_matrix(y, y_pred)
         accuracy = accuracy_score(y, y_pred)
 
@@ -140,11 +140,13 @@ class SVM:
 
         if plot_confusion:
             plt.figure(figsize=(8, 6))
-            sns.heatmap(matrix, annot=True, fmt="d", cmap="Blues")
-            plt.xlabel("Przewidywane etykiety")
-            plt.ylabel("Prawdziwe etykiety")
-            plt.title("Macierz pomyłek")
-            plt.show()
+            cmap = sns.light_palette("gold", as_cmap=True)
+            sns.heatmap(matrix, annot=True, fmt="d", cmap=cmap, square=True)
+            plt.xlabel("Predicted Labels")
+            plt.ylabel("True Labels")
+            plt.title("Confusion Matrix")
+            plt.tight_layout()
+            plt.savefig(PROJECT_ROOT / "data/training-results/svm-confusion_matrix.png")
 
         return {
             "classification_report": report,

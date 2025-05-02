@@ -1,4 +1,5 @@
 import pickle
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Tuple
@@ -11,7 +12,7 @@ from src.backend.create_asl_dataset_hdf5 import load_hdf5_dataset
 from src.backend.data_augmentation import augment
 from src.backend.models.svm import SVM
 from src.backend.utils.app_logger import AppLogger
-from src.backend.utils.miscellaneous import set_seed
+from src.backend.utils.training_setup import set_seed
 
 logger = AppLogger(name=__name__, level=LOG_LEVEL)
 
@@ -20,8 +21,8 @@ def load_and_prepare_data(
     data_path: Path, seed: int = 42
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     data = load_hdf5_dataset(data_path)
-    x_train = data["train"]["landmarks"]
-    y_train = data["train"]["labels"]
+    x_train = data["landmarks"]
+    y_train = data["labels"]
 
     x_train, x_test, y_train, y_test = train_test_split(
         x_train, y_train, test_size=0.2, random_state=seed
@@ -112,9 +113,16 @@ def main() -> None:
     }
     svm.initialize_model()
 
+    start_cv = time.time()
     svm.perform_cross_validation(x_train_aug, y_train_aug, cv=5)
+    end_cv = time.time()
+    logger.info(f"Czas wykonania walidacji krzyżowej: {end_cv - start_cv:.3f} sekund.")
+
+    start_fit = time.time()
     svm.fit(x_train_aug, y_train_aug)
-    svm.evaluate(x_test, y_test_converted)
+    end_fit = time.time()
+    logger.info(f"Czas wykonania uczenia: {end_fit - start_fit:.3f} sekund.")
+    svm.evaluate(x_test, y_test_converted, True)
 
     trained_model_path = project_root / TRAINED_MODELS_DIR
     save_trained_model(svm, trained_model_path)
