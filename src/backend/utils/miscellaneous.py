@@ -72,7 +72,10 @@ def visualize_hand(landmarks, title: str = "Hand visualisation"):
     plt.savefig(f"../../data/augmentation-visualisation/static-gesture/{title}.png")
 
 
-def visualize_augmentations(sample_landmarks):
+def visualize_augmentations(sample_landmarks, seed: int = None):
+    if seed is not None:
+        np.random.seed(seed)
+
     augmentations = {
         "original": sample_landmarks,
         "rotate z": rotate_z(sample_landmarks.copy()),
