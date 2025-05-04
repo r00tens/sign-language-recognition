@@ -466,8 +466,15 @@ class MainWindow(QMainWindow):
             self.radio1.setChecked(True)
         else:
             self.radio2.setChecked(True)
+
+        self.detection_spinbox.blockSignals(True)
+        self.tracking_spinbox.blockSignals(True)
+
         self.detection_spinbox.setValue(self.current_detection_confidence)
         self.tracking_spinbox.setValue(self.current_tracking_confidence)
+
+        self.detection_spinbox.blockSignals(False)
+        self.tracking_spinbox.blockSignals(False)
 
         self.prediction_threshold = model_params["prediction_threshold"]
         self.threshold_spinbox.setValue(model_params["prediction_threshold"])
