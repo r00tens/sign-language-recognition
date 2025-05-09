@@ -676,7 +676,7 @@ class MainWindow(QMainWindow):
                 self.reset_prediction_state()
         elif isinstance(self.model, Interpreter):
             self.predictionTextEdit.setPlainText(
-                f"Predykcja: {INVERTED_NEW_MAPPING[new_prediction]} ({max_proba:.2f})"
+                f"Predykcja: {INVERTED_NEW_MAPPING[new_prediction]} (pewność: {max_proba:.2f})"
             )
             self.update_accumulated_text(INVERTED_NEW_MAPPING[new_prediction])
 

@@ -1,7 +1,7 @@
+import math
 from pathlib import Path
 
 import keras
-import math
 
 from src.backend.config import CHANNELS, GestureConfig, LOG_LEVEL, TrainingConfig, NUM_SELECTED
 from src.backend.utils.app_logger import AppLogger
@@ -195,11 +195,11 @@ def transformer_block(head_size, num_heads, expand, attn_dropout, drop_rate, act
 
 
 def get_model(max_len, dim, kernel_size, num_head, expand, drop_rate, attn_dropout):
-    inp = keras.api.Input((max_len, CHANNELS))
+    inp = keras.api.Input(shape=(max_len, CHANNELS))
 
     x = keras.api.layers.Masking(mask_value=GestureConfig.pad)(inp)
 
-    x = keras.api.layers.Dense(dim, use_bias=False)(x)
+    x = keras.api.layers.Dense(units=dim, use_bias=False)(x)
     x = keras.api.layers.BatchNormalization(momentum=TrainingConfig.momentum)(x)
 
     x = multi_scale_conv_block(
@@ -244,9 +244,9 @@ def get_model(max_len, dim, kernel_size, num_head, expand, drop_rate, attn_dropo
         attn_dropout=attn_dropout,
     )(x)
 
-    x = keras.api.layers.Dense(dim * 2, activation=None)(x)
+    x = keras.api.layers.Dense(units=dim * 2, activation=None)(x)
     x = keras.api.layers.GlobalAveragePooling1D()(x)
-    x = keras.api.layers.Dense(NUM_SELECTED)(x)
+    x = keras.api.layers.Dense(units=NUM_SELECTED)(x)
 
     return keras.api.Model(inp, x)
 

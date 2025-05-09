@@ -1,10 +1,12 @@
+import time
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, Optional, List
 
 import keras
 import numpy as np
 import tensorflow as tf
 from matplotlib import pyplot as plt
+from sklearn.metrics import classification_report
 
 from src.backend.config import (
     LOG_LEVEL,
@@ -18,6 +20,7 @@ from src.backend.config import (
     MODEL_CNN_TRANSFORMER,
     SEED,
     PROJECT_ROOT,
+    SELECTED_WORDS,
 )
 from src.backend.data_augmentation_tf import tf_nan_mean, tf_nan_std, augment_fn
 from src.backend.models.cnn_transformer import (
@@ -58,7 +61,7 @@ class Preprocess(keras.api.layers.Layer):
         )
 
     def compute_normalized_features(self, x: tf.Tensor) -> tf.Tensor:
-        mean = tf_nan_mean(tf.gather(x, [17], axis=2), axis=[1, 2], keepdims=True)
+        mean = tf_nan_mean(tf.gather(x, [82], axis=2), axis=[1, 2], keepdims=True)
         mean = tf.where(tf.math.is_nan(mean), tf.constant(0.5, x.dtype), mean)
 
         x = tf.gather(x, self.point_landmarks, axis=2)  # shape: N, T, P, C
@@ -253,7 +256,7 @@ def plot_accuracy(history):
     max_train_acc = acc[max_train_idx]
     ax.scatter(max_train_idx + 1, max_train_acc, s=30, zorder=5)
     ax.annotate(
-        f"Max: {max_train_acc:.2f}",
+        f"Max: {max_train_acc:.4f}",
         (max_train_idx + 1, max_train_acc),
         textcoords="offset points",
         xytext=(0, -12),
@@ -265,7 +268,7 @@ def plot_accuracy(history):
         max_val_acc = val_acc[max_val_idx]
         ax.scatter(max_val_idx + 1, max_val_acc, s=30, zorder=5)
         ax.annotate(
-            f"Max: {max_val_acc:.2f}",
+            f"Max: {max_val_acc:.4f}",
             (max_val_idx + 1, max_val_acc),
             textcoords="offset points",
             xytext=(0, 8),
@@ -295,7 +298,7 @@ def plot_loss(history):
     min_train_loss = loss[min_train_idx]
     ax.scatter(min_train_idx + 1, min_train_loss, s=30, zorder=5)
     ax.annotate(
-        f"Min: {min_train_loss:.2f}",
+        f"Min: {min_train_loss:.4f}",
         (min_train_idx + 1, min_train_loss),
         textcoords="offset points",
         xytext=(0, -12),
@@ -307,7 +310,7 @@ def plot_loss(history):
         min_val_loss = val_loss[min_val_idx]
         ax.scatter(min_val_idx + 1, min_val_loss, s=30, zorder=5)
         ax.annotate(
-            f"Min: {min_val_loss:.2f}",
+            f"Min: {min_val_loss:.4f}",
             (min_val_idx + 1, min_val_loss),
             textcoords="offset points",
             xytext=(0, 8),
@@ -352,7 +355,36 @@ def plot_lr_vs_loss(history):
     plt.savefig(PROJECT_ROOT / "data/training-results/lr-vs-loss.png")
 
 
-def train_fold(fold, strategy, train_files, valid_files=None, summary=True):
+def evaluate_with_report(model: keras.Model, tfrecords: List[Path], batch_size: int, max_len: int):
+    test_ds = get_tfrec_dataset(
+        tfrecords,
+        batch_size=batch_size,
+        max_len=max_len,
+        drop_remainder=False,
+        augment=False,
+        shuffle=0,
+        repeat=False,
+    )
+
+    y_true, y_pred = [], []
+    for x_batch, y_batch in test_ds:
+        preds = model.predict(x_batch, verbose=0)
+        y_true.extend(np.argmax(y_batch.numpy(), axis=1))
+        y_pred.extend(np.argmax(preds, axis=1))
+
+    report = classification_report(
+        y_true,
+        y_pred,
+        labels=list(range(NUM_SELECTED)),
+        target_names=list(SELECTED_WORDS.keys()),
+        digits=4,
+    )
+    print(report)
+
+
+def train_fold(
+    fold, strategy, train_files, valid_files=None, summary=True
+) -> Tuple[keras.api.Model, Optional[List[float]], List[float], keras.api.callbacks.History]:
     if fold != "all":
         train_ds = get_tfrec_dataset(
             train_files,
@@ -443,7 +475,7 @@ def train_fold(fold, strategy, train_files, valid_files=None, summary=True):
     logger.info(f"Valid: {num_valid} samples")
 
     # fmt: off
-    callbacks = [
+    callbacks: list[keras.api.callbacks.Callback] = [
         keras.api.callbacks.CSVLogger(PROJECT_ROOT / f"data/training-results/training-logs.csv"),
         keras.api.callbacks.SwapEMAWeights(swap_on_epoch=True),
     ]
@@ -476,6 +508,8 @@ def train_fold(fold, strategy, train_files, valid_files=None, summary=True):
             LearningRateTracker(PROJECT_ROOT / "data/training-results/learning-rate-plot.png")
         )
 
+    start_cv = time.time()
+
     history = model.fit(
         train_ds,
         epochs=TrainingConfig.epochs,
@@ -485,6 +519,9 @@ def train_fold(fold, strategy, train_files, valid_files=None, summary=True):
         validation_data=valid_ds,
         validation_steps=-(num_valid // -TrainingConfig.batch_size),
     )
+
+    end_cv = time.time()
+    logger.info(f"Czas wykonania treningu: {end_cv - start_cv:.3f} sekund.")
 
     plot_history(history)
 
@@ -551,6 +588,16 @@ def train_folds(folds, strategy, summary=True):
 
         train_fold(fold, strategy, train_files, valid_files, summary)
 
+        best_model = load_keras_model(
+            PROJECT_ROOT / f"{TRAINED_MODELS_DIR}/cnn-transformer-best.keras"
+        )
+        evaluate_with_report(
+            best_model,
+            valid_files,
+            batch_size=TrainingConfig.batch_size,
+            max_len=GestureConfig.max_len,
+        )
+
 
 class TFLiteModel(tf.Module):
     def __init__(self, keras_model):
@@ -606,7 +653,7 @@ def main():
 
     strategy, replicas = get_strategy(TrainingConfig.device)
 
-    train_folds([0], strategy)
+    train_folds(folds=[0], strategy=strategy)
 
     project_root = Path(__file__).resolve().parents[3]
 
